@@ -5,18 +5,12 @@ from unicodedata import normalize
 import timeit
 
 FORMAT_NUMBER = lambda x: x.replace(",", ".").replace("\u200b", "")
-FORMAT_CLEAN = lambda x: "'" + x.replace(" ", "") + "'"
+FORMAT_CLEAN = lambda x: "'" + FORMAT_REMOVE_ACCENTS(x.replace(" ", "")) + "'"
 FORMAT_IDENTITY = lambda x: x
 FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("\\", "").replace("'", "''")
 FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x).encode('ASCII', 'ignore').decode('ASCII').upper())
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
-DEFAULT_BATCH_SIZE = 500
-
-def preprocess_proposta_csv_row(csv_rows):
-    desc_orgao_sup = FORMAT_REMOVE_ACCENTS(csv_rows[5])
-    if desc_orgao_sup != "MINISTERIO DA EDUCACAO":
-        csv_rows = []
-    return csv_rows
+DEFAULT_BATCH_SIZE = 204290
 
 TIPO_VEICULO = {
     'csv_file_name': 'acidentes2017_teste',
@@ -29,15 +23,24 @@ TIPO_VEICULO = {
 }
 
 MARCA = {
-    'csv_file_name': 'acidentes2017_teste',
+    'csv_file_name': 'acidentes2017',
     'csv_columns_indexes': [20],
-    'table_name': 'tipo_veiculo',
+    'table_name': 'marca',
     'columns_to_insert': ['marca'],
     'insert_value_format': "({})",
     'row_formatters': [FORMAT_CLEAN],
     'insert_command': "INSERT"
+}
 
 
+VEICULO = {
+    'csv_file_name': 'acidentes2017',
+    'csv_columns_indexes': [19,20,21],
+    'table_name': 'veiculo',
+    'columns_to_insert': ['id_tipo_veiculo', 'id_marca', 'ano_fabricacao_veiculo'],
+    'insert_value_format': "({},{},{})",
+    'row_formatters': [FORMAT_CLEAN, FORMAT_CLEAN, FORMAT_CLEAN],
+    'insert_command': "INSERT"
 }
 
 def columns_name_statement(columns_to_insert):
@@ -46,7 +49,7 @@ def columns_name_statement(columns_to_insert):
 
 def rangesBat(num):
     return [num * DEFAULT_BATCH_SIZE, num * DEFAULT_BATCH_SIZE + DEFAULT_BATCH_SIZE]
-
+i = 0
 def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, ranges, columns_to_insert):
     batch_start = timeit.default_timer()
     insert_values_batch = insert_values[ranges[0]:ranges[1]]
@@ -56,10 +59,9 @@ def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_col
 
 
     db_cursor.execute(insert_sql_command)
-    db.commit()
     batch_stop = timeit.default_timer()
     batch_time = batch_stop - batch_start
-    print("Linhas inseridas/atualizadas em " + table_name + ": " + str(ranges[1]) + "/" + str(total_rows) + ' (' + str(batch_time) + 's)')
+    # print("Linhas inseridas/atualizadas em " + table_name + ": " + str(ranges[1]) + "/" + str(total_rows) + ' (' + str(batch_time) + 's)')
 
 def format_csv_column(row, row_formatter):
     if row == '':
@@ -117,7 +119,7 @@ def convert_csv_to_sql_insert_values(config):
     allow_null_columns = config.get('allow_null_columns', True)
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_preprocess_row = config.get('csv_preprocess_row', None)
-    ifile = open('dados/' + file_name + '.csv', 'r', encoding="utf-8")
+    ifile = open('dados/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
     #print("####### 111 - ",reader)
@@ -133,13 +135,15 @@ def insert_values_on_database(db_cursor, table_name, insert_command, columns_to_
     insert_columns_name_statement = columns_name_statement(columns_to_insert)
     total_rows = len(insert_values)
     print('total_rows: ',total_rows)
+    print(insert_values)
     numBatchs = total_rows // DEFAULT_BATCH_SIZE
     lastRangeLow = total_rows - (total_rows % DEFAULT_BATCH_SIZE) 
     listSequenceBatchs = list(range(numBatchs))
     listRangesBatchs = list(map(lambda x: rangesBat(x) , listSequenceBatchs))
     listRangesBatchs.append([lastRangeLow, total_rows])
-    print(listRangesBatchs)
+    # print(listRangesBatchs)
     list(map(lambda x: mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, x, columns_to_insert) , listRangesBatchs))
+    db.commit()
     stop = timeit.default_timer()
     time_spent = stop - start
     print('Tempo inserindo na tabela ' + table_name + ': ' + str(time_spent) + 's')
@@ -167,6 +171,7 @@ if __name__ == '__main__':
     startTotal = timeit.default_timer()
     
     process(db_cursor, TIPO_VEICULO)
+    # process(db_cursor, MARCA)
     
     stopTotal = timeit.default_timer()
     timeSpentTotal = stopTotal - startTotal
