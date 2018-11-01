@@ -20,12 +20,24 @@ def preprocess_proposta_csv_row(csv_rows):
 
 TIPO_VEICULO = {
     'csv_file_name': 'acidentes2017_teste',
-    'csv_columns_indexes': [18, 19],
+    'csv_columns_indexes': [19],
     'table_name': 'tipo_veiculo',
-    'columns_to_insert': ['id_tipo_veiculo', 'tipo_veiculocol'],
-    'insert_value_format': "({}, {})",
-    'row_formatters': [FORMAT_NUMBER] + [FORMAT_CLEAN],
+    'columns_to_insert': ['tipo_veiculocol'],
+    'insert_value_format': "({})",
+    'row_formatters': [FORMAT_CLEAN],
     'insert_command': "INSERT"
+}
+
+MARCA = {
+    'csv_file_name': 'acidentes2017_teste',
+    'csv_columns_indexes': [20],
+    'table_name': 'tipo_veiculo',
+    'columns_to_insert': ['marca'],
+    'insert_value_format': "({})",
+    'row_formatters': [FORMAT_CLEAN],
+    'insert_command': "INSERT"
+
+
 }
 
 def columns_name_statement(columns_to_insert):
@@ -35,11 +47,14 @@ def columns_name_statement(columns_to_insert):
 def rangesBat(num):
     return [num * DEFAULT_BATCH_SIZE, num * DEFAULT_BATCH_SIZE + DEFAULT_BATCH_SIZE]
 
-def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, ranges):
+def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, ranges, columns_to_insert):
     batch_start = timeit.default_timer()
     insert_values_batch = insert_values[ranges[0]:ranges[1]]
-    insert_sql_command = insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch)
-    #print("####### 444 - ",insert_sql_command)
+    insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + 
+        ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' +
+        columns_to_insert[0] + ' = ' +  columns_to_insert[0])
+
+
     db_cursor.execute(insert_sql_command)
     db.commit()
     batch_stop = timeit.default_timer()
@@ -124,7 +139,7 @@ def insert_values_on_database(db_cursor, table_name, insert_command, columns_to_
     listRangesBatchs = list(map(lambda x: rangesBat(x) , listSequenceBatchs))
     listRangesBatchs.append([lastRangeLow, total_rows])
     print(listRangesBatchs)
-    list(map(lambda x: mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, x) , listRangesBatchs))
+    list(map(lambda x: mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, x, columns_to_insert) , listRangesBatchs))
     stop = timeit.default_timer()
     time_spent = stop - start
     print('Tempo inserindo na tabela ' + table_name + ': ' + str(time_spent) + 's')
