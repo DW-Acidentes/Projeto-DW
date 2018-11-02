@@ -13,8 +13,10 @@ FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 204290
 
+FILE_NAME = 'acidentes2017'
+
 TIPO_VEICULO = {
-    'csv_file_name': 'acidentes2017',
+    'csv_file_name': FILE_NAME,
     'csv_columns_indexes': [19],
     'table_name': 'tipo_veiculo',
     'columns_to_insert': ['tipo_veiculocol'],
@@ -24,22 +26,12 @@ TIPO_VEICULO = {
 }
 
 MARCA = {
-    'csv_file_name': 'acidentes2017_teste',
+    'csv_file_name': FILE_NAME,
     'csv_columns_indexes': [20],
     'table_name': 'marca',
     'columns_to_insert': ['marca'],
     'insert_value_format': "({})",
     'row_formatters': [FORMAT_CLEAN],
-    'insert_command': "INSERT"
-}
-
-VEICULO = {
-    'csv_file_name': 'acidentes2017',
-    'csv_columns_indexes': [19,20],
-    'table_name': 'veiculo',
-    'columns_to_insert': ['id_tipo_veiculo','id_marca'],
-    'insert_value_format': "({},{})",
-    'row_formatters': [FORMAT_CLEAN, FORMAT_CLEAN],
     'insert_command': "INSERT"
 }
 
@@ -58,6 +50,7 @@ NEGRITO = lambda x: color.BOLD + x + color.ENDC
 SUCESSO = lambda x: color.OKGREEN + x + color.ENDC
 ERRO = lambda x: color.FAIL + x + color.ENDC
 INFO = lambda x: color.OKBLUE + x + color.ENDC
+HEADER = lambda x: color.HEADER + x + color.ENDC
 
 def columns_name_statement(columns_to_insert):
     insert_columns_name_statement = '(' + ','.join(list(map(lambda x: '`' + x + '`', columns_to_insert))) + ')'
@@ -72,7 +65,7 @@ def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_col
     tabelasExt = ['tipo_veiculo','marca']
     colunasExt = ['tipo_veiculocol','marca']
      
-    print("Valores do batch", insert_values_batch)
+    #print("Valores do batch", insert_values_batch)
     
     insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' + str(columns_to_insert[0]) + ' = ' +  str(columns_to_insert[0]) )
     
@@ -112,7 +105,7 @@ def selectIds (csv_row):
 def build_insert_value(csv_row, row_formatters, insert_value_format):
     
     csv_row = list(map(lambda x,y: format_csv_column(x,y), csv_row, row_formatters))
-    print("Linha atual no CSV:", csv_row)   
+    #print("Linha atual no CSV:", csv_row)   
     
     #csv_row = selectIds(csv_row)
     
@@ -192,14 +185,15 @@ def insert_values_on_database(db_cursor, table_name, insert_command, columns_to_
     db.commit()
     stop = timeit.default_timer()
     time_spent = stop - start
-    print('Tempo inserindo na tabela ' + table_name + ': ' + str(time_spent) + 's')
+    print('Tempo inserindo na tabela ' + table_name + ': ' + str(time_spent) + 's\n')
 
 def process(db_cursor, config):
+    print(HEADER('Iniciando extração da tabela ' + NEGRITO(config['table_name']) + '\n'))
     start_build_insert = timeit.default_timer()
     insert_values_sql_part = convert_csv_to_sql_insert_values(config)
     
     stop_build_insert = timeit.default_timer()
-    print('Entrada processada para tabela ' + config['table_name'] + ' em: ' + str(stop_build_insert - start_build_insert) + 's')
+    print('Entrada processada para tabela ' + INFO(config['table_name']) + ' em: ' + str(stop_build_insert - start_build_insert) + 's')
     insert_values_on_database(db_cursor, config['table_name'], config['insert_command'], config['columns_to_insert'], insert_values_sql_part)
 
 db = None
@@ -217,13 +211,12 @@ if __name__ == '__main__':
     
     startTotal = timeit.default_timer()
     
-    #process(db_cursor, TIPO_VEICULO)
+    process(db_cursor, TIPO_VEICULO)
     process(db_cursor, MARCA)
-    #process(db_cursor, VEICULO)
     
     stopTotal = timeit.default_timer()
     timeSpentTotal = stopTotal - startTotal
     minutesTotal = int(timeSpentTotal // 60) # Parte inteira
     secondsTotal = int( (timeSpentTotal/60 - minutesTotal) * 60 )
-    print('Tempo total do processo: ' + color.ENDC + str(minutesTotal) + ' min : ' + str(secondsTotal) + ' s')
+    print('\nTempo total do processo: ' + color.ENDC + str(minutesTotal) + ' min : ' + str(secondsTotal) + ' s')
     print(color.OKGREEN + '** Inserção finalizada com sucesso **' + color.ENDC)
