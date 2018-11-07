@@ -5,13 +5,12 @@ from unicodedata import normalize
 import timeit
 
 FORMAT_NUMBER = lambda x: x.replace(",", ".").replace("\u200b", "")
-FORMAT_CLEAN = lambda x: "'" + x.replace(" ", "").replace("'", "") + "'"
+FORMAT_CLEAN = lambda x: "'" + x.strip().replace("'", "") + "'"
 FORMAT_CLEAN_LIST = lambda x: x.replace(" ", "")
-FORMAT_IDENTITY = lambda x: x
 FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("\\", "").replace("'", "''")
 FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x).encode('ASCII', 'ignore').decode('ASCII').upper())
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
-DEFAULT_BATCH_SIZE = 204290
+DEFAULT_BATCH_SIZE = 10000
 
 FILE_NAME = 'acidentes2017'
 
@@ -34,6 +33,18 @@ MARCA = {
     'row_formatters': [FORMAT_CLEAN],
     'insert_command': "INSERT"
 }
+def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
+    return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela +' = '
+
+VEICULO = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [19,20,21],
+    'table_name': 'veiculo',
+    'columns_to_insert': ['id_tipo_veiculo','id_marca', 'ano_fabricacao_veiculo'],
+    'insert_value_format': "("+ format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculocol') +" {}),"+format_foreing_key('id_marca','marca','marca') +" {}),{})",
+    'row_formatters': [FORMAT_CLEAN, FORMAT_CLEAN, FORMAT_CLEAN],
+    'insert_command': "INSERT"
+}
 
 class color:
     HEADER = '\033[95m'
@@ -52,6 +63,7 @@ ERRO = lambda x: color.FAIL + x + color.ENDC
 INFO = lambda x: color.OKBLUE + x + color.ENDC
 HEADER = lambda x: color.HEADER + x + color.ENDC
 
+
 def columns_name_statement(columns_to_insert):
     insert_columns_name_statement = '(' + ','.join(list(map(lambda x: '`' + x + '`', columns_to_insert))) + ')'
     return insert_columns_name_statement
@@ -62,45 +74,24 @@ def rangesBat(num):
 def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_columns_name_statement, total_rows, ranges, columns_to_insert):
     batch_start = timeit.default_timer()
     insert_values_batch = insert_values[ranges[0]:ranges[1]]
-    tabelasExt = ['tipo_veiculo','marca']
-    colunasExt = ['tipo_veiculocol','marca']
-     
+
     #print("Valores do batch", insert_values_batch)
-    
+    # print(insert_values_batch)
     insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' + str(columns_to_insert[0]) + ' = ' +  str(columns_to_insert[0]) )
-    
     db_cursor.execute(insert_sql_command)
-    db.commit()
+    # db.commit()
+    # print(db_cursor.mogrify(insert_sql_command))
+    # db_cursor = db.cursor()
 
     batch_stop = timeit.default_timer()
     batch_time = batch_stop - batch_start
     print("Linhas inseridas/atualizadas em " + INFO(table_name) + ": " + str(ranges[1]) + "/" + str(total_rows) + ' (' + str(batch_time) + 's)')
 
 def format_csv_column(row, row_formatter):
-    if row == '':
+    if row == '' or row == 'NA':
         return 'NULL'
     else:
-        return row_formatter(row)
-    
-def selectIds (csv_row):
-    
-    lista = []
-    
-    select1 = "(SELECT id_tipo_veiculo FROM tipo_veiculo WHERE tipo_veiculocol = " + str(csv_row[0]) + ")"
-    select2 = "(SELECT id_marca FROM marca WHERE marca = " + str(csv_row[1]) + ")"
-    
-    db_cursor.execute(select1)
-    id = db_cursor.fetchall()
-
-    lista.append(id[0][0])
-    
-    db_cursor.execute(select2)
-    id = db_cursor.fetchall()
-   
-    lista.append(id[0][0])
-    
-    return lista
-    
+        return row_formatter(row)    
 
 def build_insert_value(csv_row, row_formatters, insert_value_format):
     
@@ -173,7 +164,7 @@ def insert_values_on_database(db_cursor, table_name, insert_command, columns_to_
     start = timeit.default_timer()
     insert_columns_name_statement = columns_name_statement(columns_to_insert)
     total_rows = len(insert_values)
-    print('Total de linhas: ',total_rows)
+    # print('Total de linhas: ',total_rows)
     
     numBatchs = total_rows // DEFAULT_BATCH_SIZE
     lastRangeLow = total_rows - (total_rows % DEFAULT_BATCH_SIZE) 
@@ -212,7 +203,8 @@ if __name__ == '__main__':
     startTotal = timeit.default_timer()
     
     process(db_cursor, TIPO_VEICULO)
-    process(db_cursor, MARCA)
+    # process(db_cursor, MARCA)
+    # process(db_cursor, VEICULO)
     
     stopTotal = timeit.default_timer()
     timeSpentTotal = stopTotal - startTotal
