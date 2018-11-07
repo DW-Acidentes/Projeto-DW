@@ -15,6 +15,20 @@ DEFAULT_BATCH_SIZE = 204290
 #FILE_NAME = 'acidentes2017'
 FILE_NAME = 'acidentes2017_teste'
 
+
+def create_dic_table_simple(csv_columns_indexes, table_name):
+    DIC_TABLE = {
+        'csv_file_name': FILE_NAME,
+        'csv_columns_indexes': [csv_columns_indexes],
+        'table_name': table_name,
+        'columns_to_insert': [table_name],
+        'insert_value_format': "({})",
+        'row_formatters': [FORMAT_CLEAN],
+        'insert_command': "INSERT"
+    }
+    return DIC_TABLE
+
+
 def create_dic_table(csv_columns_indexes, table_name, columns_to_insert):
     len_col = len(columns_to_insert)
     value_format = "{}," * len_col
@@ -29,17 +43,11 @@ def create_dic_table(csv_columns_indexes, table_name, columns_to_insert):
     }
     return DIC_TABLE
 
-def create_dic_table_simple(csv_columns_indexes, table_name):
-    DIC_TABLE = {
-        'csv_file_name': FILE_NAME,
-        'csv_columns_indexes': [csv_columns_indexes],
-        'table_name': table_name,
-        'columns_to_insert': [table_name],
-        'insert_value_format': "({})",
-        'row_formatters': [FORMAT_CLEAN],
-        'insert_command': "INSERT"
-    }
-    return DIC_TABLE
+def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
+    return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela +' = '
+
+def format_foreing_key_2(id_tabela,nome_tabela,nome_coluna_tabela1,nome_coluna_tabela2):
+    return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela1 +' = {} AND ' + nome_coluna_tabela2 +' = '
 
 TIPO_VEICULO = create_dic_table_simple(19,'tipo_veiculo')
 MARCA = create_dic_table_simple(20,'marca')
@@ -57,34 +65,90 @@ CONDICAO_METEREOLOGICA = create_dic_table_simple(14,'condicao_metereologica')
 TIPO_PISTA = create_dic_table_simple(15,'tipo_pista')
 TRACADO_VIA = create_dic_table_simple(16,'tracado_via')
 USO_SOLO = create_dic_table_simple(17,'uso_solo')
-DELEGACIA = create_dic_table_simple(33,'delegacia')  
+DELEGACIA = create_dic_table_simple(33,'delegacia')
 
-
-def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
-    return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela +' = '
+DATA = create_dic_table([2,3,4], 'data', ['data_inversa', 'dia_semana', 'horario'])  
 
 VEICULO = {
     'csv_file_name': FILE_NAME,
     'csv_columns_indexes': [19,20,21],
     'table_name': 'veiculo',
-    'columns_to_insert': ['id_tipo_veiculo','id_marca', 'ano_fabricacao_veiculo'],
-    'insert_value_format': "("+ format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculo') +" {}),"+format_foreing_key('id_marca','marca','marca') +" {}),{})",
+    'columns_to_insert': ['id_tipo_veiculo','id_marca','ano_fabricacao_veiculo'],
+    'insert_value_format': "("+ format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculo') + " {})," +
+                        format_foreing_key('id_marca','marca','marca') +" {}),{})",
     'row_formatters': [FORMAT_CLEAN] * 3,
     'insert_command': "INSERT"
 }
 
-DATA = create_dic_table([2,3,4], 'data', ['data_inversa', 'dia_semana', 'horario'])
-
-'''DATA = {
+PESSOA = {
     'csv_file_name': FILE_NAME,
-    'csv_columns_indexes': [2,3,4],
-    'table_name': 'data',
-    'columns_to_insert': ['data_inversa', 'dia_semana', 'horario'],
-    'insert_value_format': "({},{},{})",
-    'row_formatters': [FORMAT_CLEAN] * 3,
+    'csv_columns_indexes': [22,24,25,23],
+    'table_name': 'pessoa',
+    'columns_to_insert': ['id_tipo_envolvido','idade','id_sexo','id_estado_fisico'],
+    'insert_value_format': "("+ format_foreing_key('id_tipo_envolvido','tipo_envolvido','tipo_envolvido') + " {})," +
+                        "{}," +
+                        format_foreing_key('id_sexo','sexo','sexo') +" {})," +
+                        format_foreing_key('id_estado_fisico','estado_fisico','estado_fisico') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 4,
     'insert_command': "INSERT"
-}'''
+}
 
+MUNICIPIO = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [8,5],
+    'table_name': 'municipio',
+    'columns_to_insert': ['municipio','id_uf'],
+    'insert_value_format': "({}," +
+                        format_foreing_key('id_uf','uf','uf') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 2,
+    'insert_command': "INSERT"
+}
+
+ENDERECO = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [6,7,8,30,31],
+    'table_name': 'endereco',
+    'columns_to_insert': ['id_br','km','id_municipio','latitude','longitude'],
+    'insert_value_format': "("+ format_foreing_key('id_br','br','br') + " {})," +
+                        "{}," +
+                        format_foreing_key('id_municipio','municipio','municipio') +" {})," +
+                        "{}," +
+                        "{})",
+    'row_formatters': [FORMAT_CLEAN] * 5,
+    'insert_command': "INSERT"
+}
+
+PISTA = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [12,13,14,15,16,17],
+    'table_name': 'pista',
+    'columns_to_insert': ['id_fase_dia','id_sentido_via','id_condicao_metereologica','id_tipo_pista','id_tracado_via','id_uso_solo'],
+    'insert_value_format': "("+ format_foreing_key('id_fase_dia','fase_dia','fase_dia') + " {})," +
+                        format_foreing_key('id_sentido_via','sentido_via','sentido_via') +" {})," +
+                        format_foreing_key('id_condicao_metereologica','condicao_metereologica','condicao_metereologica') +" {})," +
+                        format_foreing_key('id_tipo_pista','tipo_pista','tipo_pista') +" {})," +
+                        format_foreing_key('id_tracado_via','tracado_via','tracado_via') +" {})," +
+                        format_foreing_key('id_uso_solo','uso_solo','uso_solo') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 6,
+    'insert_command': "INSERT"
+}
+
+ACIDENTE = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [9,10,11,15,16,17],
+    'table_name': 'acidente',
+    'columns_to_insert': ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_data','id_pista','id_endereco'],
+    'insert_value_format': "("+ format_foreing_key('id_causa_acidente','causa_acidente','causa_acidente') + " {})," +
+                        format_foreing_key('id_tipo_acidente','tipo_acidente','tipo_acidente') +" {})," +
+                        format_foreing_key('id_classificacao_acidente','classificacao_acidente','classificacao_acidente') +" {})," +
+                        format_foreing_key_2('id_data','data','data_inversa','horario') +" {})," +
+                        format_foreing_key('id_tipo_pista','tipo_pista','tipo_pista') +" {})," +
+                        format_foreing_key('id_endereco','endereco','endereco') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 6,
+    'insert_command': "INSERT"
+}
+
+#SELECT `id_data` FROM `data` WHERE `data_inversa` = '2017-01-01' AND `horario` = '00:40:00'
 
 class color:
     HEADER = '\033[95m'
@@ -118,7 +182,7 @@ def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_col
     #print("Valores do batch", insert_values_batch)
     # print(insert_values_batch)
     insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' + str(columns_to_insert[0]) + ' = ' +  str(columns_to_insert[0]) )
-    #print("insert_sql_command === ",insert_sql_command)
+    print("insert_sql_command === ",insert_sql_command)
     db_cursor.execute(insert_sql_command)
     # db.commit()
     # print(db_cursor.mogrify(insert_sql_command))
@@ -255,12 +319,18 @@ if __name__ == '__main__':
     list_tables_inserts = []
     
     # Extraindo as tabela simples
-    '''list_tables_inserts = [TIPO_VEICULO,MARCA,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
+    list_tables_inserts = [TIPO_VEICULO,MARCA,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
                                CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,FASE_DIA,
-                               SENTIDO_VIA,CONDICAO_METEREOLOGICA,TIPO_PISTA,TRACADO_VIA,USO_SOLO,DELEGACIA]'''
+                               SENTIDO_VIA,CONDICAO_METEREOLOGICA,TIPO_PISTA,TRACADO_VIA,USO_SOLO,DELEGACIA]
     # Para as fases de teste
-    #list_tables_inserts.append(VEICULO)
+    list_tables_inserts.append(VEICULO)
     list_tables_inserts.append(DATA)
+    list_tables_inserts.append(PESSOA)
+    list_tables_inserts.append(MUNICIPIO) 
+    list_tables_inserts.append(ENDERECO)
+    list_tables_inserts.append(PISTA)
+    list_tables_inserts.append(ACIDENTE)
+       
         
     process_tables(list_tables_inserts)
     

@@ -163,8 +163,8 @@ CREATE TABLE IF NOT EXISTS `mydb`.`endereco` (
   `id_br` INT NULL,
   `km` VARCHAR(45) NULL,
   `id_municipio` INT NULL,
-  `latitude` INT NULL,
-  `longitude` INT NULL,
+  `latitude` VARCHAR(45) NULL,
+  `longitude` VARCHAR(45) NULL,
   INDEX `id_br_idx` (`id_br` ASC),
   INDEX `id_municipio_idx` (`id_municipio` ASC),
   PRIMARY KEY (`id_endereco`),
@@ -189,9 +189,9 @@ CREATE TABLE IF NOT EXISTS `mydb`.`data` (
   `data_inversa` VARCHAR(45) NULL,
   `dia_semana` VARCHAR(45) NULL,
   `horario` VARCHAR(45) NULL,
-  PRIMARY KEY (`id_data`))
+  PRIMARY KEY (`id_data`),
+  UNIQUE (`data_inversa`,`horario`))
 ENGINE = InnoDB;
-
 
 -- -----------------------------------------------------
 -- Table `mydb`.`causa_acidente`
@@ -287,7 +287,7 @@ ENGINE = InnoDB;
 -- Table `mydb`.`pista`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`pista` (
-  `id_pista` INT NOT NULL,
+  `id_pista` INT NOT NULL auto_increment,
   `id_fase_dia` INT NULL,
   `id_sentido_via` INT NULL,
   `id_condicao_metereologica` INT NULL,
