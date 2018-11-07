@@ -10,29 +10,56 @@ FORMAT_CLEAN_LIST = lambda x: x.replace(" ", "")
 FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("\\", "").replace("'", "''")
 FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x).encode('ASCII', 'ignore').decode('ASCII').upper())
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
-DEFAULT_BATCH_SIZE = 10000
+DEFAULT_BATCH_SIZE = 204290
 
-FILE_NAME = 'acidentes2017'
+#FILE_NAME = 'acidentes2017'
+FILE_NAME = 'acidentes2017_teste'
 
-TIPO_VEICULO = {
-    'csv_file_name': FILE_NAME,
-    'csv_columns_indexes': [19],
-    'table_name': 'tipo_veiculo',
-    'columns_to_insert': ['tipo_veiculocol'],
-    'insert_value_format': "({})",
-    'row_formatters': [FORMAT_CLEAN],
-    'insert_command': "INSERT"
-}
+def create_dic_table(csv_columns_indexes, table_name, columns_to_insert):
+    len_col = len(columns_to_insert)
+    value_format = "{}," * len_col
+    DIC_TABLE = {
+        'csv_file_name': FILE_NAME,
+        'csv_columns_indexes': csv_columns_indexes,
+        'table_name': table_name,
+        'columns_to_insert': columns_to_insert,
+        'insert_value_format': "(" + value_format[:-1] + ")",
+        'row_formatters': [FORMAT_CLEAN] * len_col,
+        'insert_command': "INSERT"
+    }
+    return DIC_TABLE
 
-MARCA = {
-    'csv_file_name': FILE_NAME,
-    'csv_columns_indexes': [20],
-    'table_name': 'marca',
-    'columns_to_insert': ['marca'],
-    'insert_value_format': "({})",
-    'row_formatters': [FORMAT_CLEAN],
-    'insert_command': "INSERT"
-}
+def create_dic_table_simple(csv_columns_indexes, table_name):
+    DIC_TABLE = {
+        'csv_file_name': FILE_NAME,
+        'csv_columns_indexes': [csv_columns_indexes],
+        'table_name': table_name,
+        'columns_to_insert': [table_name],
+        'insert_value_format': "({})",
+        'row_formatters': [FORMAT_CLEAN],
+        'insert_command': "INSERT"
+    }
+    return DIC_TABLE
+
+TIPO_VEICULO = create_dic_table_simple(19,'tipo_veiculo')
+MARCA = create_dic_table_simple(20,'marca')
+SEXO = create_dic_table_simple(25,'sexo')
+ESTADO_FISICO = create_dic_table_simple(23,'estado_fisico')
+BR = create_dic_table_simple(6,'br')
+UF = create_dic_table_simple(5,'uf')
+TIPO_ENVOLVIDO = create_dic_table_simple(22,'tipo_envolvido')
+CAUSA_ACIDENTE = create_dic_table_simple(9,'causa_acidente')
+TIPO_ACIDENTE = create_dic_table_simple(10,'tipo_acidente')
+CLASSIFICACAO_ACIDENTE = create_dic_table_simple(11,'classificacao_acidente')
+FASE_DIA = create_dic_table_simple(12,'fase_dia')
+SENTIDO_VIA = create_dic_table_simple(13,'sentido_via')
+CONDICAO_METEREOLOGICA = create_dic_table_simple(14,'condicao_metereologica')  
+TIPO_PISTA = create_dic_table_simple(15,'tipo_pista')
+TRACADO_VIA = create_dic_table_simple(16,'tracado_via')
+USO_SOLO = create_dic_table_simple(17,'uso_solo')
+DELEGACIA = create_dic_table_simple(33,'delegacia')  
+
+
 def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
     return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela +' = '
 
@@ -41,10 +68,23 @@ VEICULO = {
     'csv_columns_indexes': [19,20,21],
     'table_name': 'veiculo',
     'columns_to_insert': ['id_tipo_veiculo','id_marca', 'ano_fabricacao_veiculo'],
-    'insert_value_format': "("+ format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculocol') +" {}),"+format_foreing_key('id_marca','marca','marca') +" {}),{})",
-    'row_formatters': [FORMAT_CLEAN, FORMAT_CLEAN, FORMAT_CLEAN],
+    'insert_value_format': "("+ format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculo') +" {}),"+format_foreing_key('id_marca','marca','marca') +" {}),{})",
+    'row_formatters': [FORMAT_CLEAN] * 3,
     'insert_command': "INSERT"
 }
+
+DATA = create_dic_table([2,3,4], 'data', ['data_inversa', 'dia_semana', 'horario'])
+
+'''DATA = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [2,3,4],
+    'table_name': 'data',
+    'columns_to_insert': ['data_inversa', 'dia_semana', 'horario'],
+    'insert_value_format': "({},{},{})",
+    'row_formatters': [FORMAT_CLEAN] * 3,
+    'insert_command': "INSERT"
+}'''
+
 
 class color:
     HEADER = '\033[95m'
@@ -78,6 +118,7 @@ def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_col
     #print("Valores do batch", insert_values_batch)
     # print(insert_values_batch)
     insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' + str(columns_to_insert[0]) + ' = ' +  str(columns_to_insert[0]) )
+    #print("insert_sql_command === ",insert_sql_command)
     db_cursor.execute(insert_sql_command)
     # db.commit()
     # print(db_cursor.mogrify(insert_sql_command))
@@ -149,7 +190,8 @@ def convert_csv_to_sql_insert_values(config):
     allow_null_columns = config.get('allow_null_columns', True)
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_preprocess_row = config.get('csv_preprocess_row', None)
-    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    #ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="utf-8")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
@@ -186,7 +228,11 @@ def process(db_cursor, config):
     stop_build_insert = timeit.default_timer()
     print('Entrada processada para tabela ' + INFO(config['table_name']) + ' em: ' + str(stop_build_insert - start_build_insert) + 's')
     insert_values_on_database(db_cursor, config['table_name'], config['insert_command'], config['columns_to_insert'], insert_values_sql_part)
-
+    
+def process_tables(list_tables):
+    list(map(lambda x: process(db_cursor, x), list_tables))
+    
+    
 db = None
 
 if __name__ == '__main__':
@@ -199,12 +245,25 @@ if __name__ == '__main__':
         charset="utf8"
     )
     db_cursor = db.cursor()
+    '''db_cursor.execute("SET GLOBAL max_allowed_packet=268435456")
+    db_cursor.execute("SET @@GLOBAL.wait_timeout=300")
+    db_cursor.execute("SET profiling = 1")
+    db.commit()'''
     
     startTotal = timeit.default_timer()
     
-    process(db_cursor, TIPO_VEICULO)
-    # process(db_cursor, MARCA)
-    # process(db_cursor, VEICULO)
+    list_tables_inserts = []
+    
+    # Extraindo as tabela simples
+    '''list_tables_inserts = [TIPO_VEICULO,MARCA,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
+                               CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,FASE_DIA,
+                               SENTIDO_VIA,CONDICAO_METEREOLOGICA,TIPO_PISTA,TRACADO_VIA,USO_SOLO,DELEGACIA]'''
+    # Para as fases de teste
+    #list_tables_inserts.append(VEICULO)
+    list_tables_inserts.append(DATA)
+        
+    process_tables(list_tables_inserts)
+    
     
     stopTotal = timeit.default_timer()
     timeSpentTotal = stopTotal - startTotal

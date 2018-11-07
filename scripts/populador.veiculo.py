@@ -70,13 +70,15 @@ def format_csv_column(row, row_formatter):
     
 def concatenarSelects(csv_row):
     lista = []
+    print()
     
     select1 = "(SELECT id_tipo_veiculo FROM tipo_veiculo WHERE tipo_veiculocol = " + str(csv_row[0]) + ")"
     select2 = "(SELECT id_marca FROM marca WHERE marca = " + str(csv_row[1]) + ")"
     
     db_cursor.execute(select1)
-    id = db_cursor.fetchall()
-
+    #print("select1 = ", select1)
+    id = db_cursor.fetchall() 
+    #print("id = ", id)
     lista.append(id[0][0])
     
     db_cursor.execute(select2)
@@ -90,8 +92,9 @@ def concatenarSelects(csv_row):
     
 
 def build_insert_value(csv_row, row_formatters, insert_value_format):
+    #print("csv_row = ",csv_row)
     csv_row = list(map(lambda x,y: format_csv_column(x,y), csv_row, row_formatters))
-    
+    #print("csv_row = ",csv_row)
     csv_row = concatenarSelects(csv_row)
     #print("Linha atual no CSV:", csv_row)
     

@@ -18,7 +18,7 @@ USE `mydb` ;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`tipo_veiculo` (
   `id_tipo_veiculo` INT NOT NULL auto_increment,
-  `tipo_veiculocol` VARCHAR(45) NULL UNIQUE,
+  `tipo_veiculo` VARCHAR(45) NULL UNIQUE,
   PRIMARY KEY (`id_tipo_veiculo`))
 ENGINE = InnoDB;
 
@@ -62,7 +62,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`sexo` (
   `id_sexo` INT NOT NULL auto_increment,
-  `sexo` VARCHAR(45) NULL,
+  `sexo` VARCHAR(45) NULL UNIQUE,
   PRIMARY KEY (`id_sexo`))
 ENGINE = InnoDB;
 
@@ -186,7 +186,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`data` (
   `id_data` INT NOT NULL auto_increment,
-  `data_inversa` INT NULL,
+  `data_inversa` VARCHAR(45) NULL,
   `dia_semana` VARCHAR(45) NULL,
   `horario` VARCHAR(45) NULL,
   PRIMARY KEY (`id_data`))
@@ -264,12 +264,12 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
--- Table `mydb`.`trancado_via`
+-- Table `mydb`.`tracado_via`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`trancado_via` (
-  `id_trancado_via` INT NOT NULL auto_increment,
-  `trancado_via` VARCHAR(45) NULL UNIQUE,
-  PRIMARY KEY (`id_trancado_via`))
+CREATE TABLE IF NOT EXISTS `mydb`.`tracado_via` (
+  `id_tracado_via` INT NOT NULL auto_increment,
+  `tracado_via` VARCHAR(45) NULL UNIQUE,
+  PRIMARY KEY (`id_tracado_via`))
 ENGINE = InnoDB;
 
 
@@ -299,7 +299,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`pista` (
   INDEX `id_sentido_via_idx` (`id_sentido_via` ASC),
   INDEX `id_condicao_metereologica_idx` (`id_condicao_metereologica` ASC),
   INDEX `id_tipo_pista_idx` (`id_tipo_pista` ASC),
-  INDEX `id_tracadi_via_idx` (`id_tracado_via` ASC),
+  INDEX `id_tracado_via_idx` (`id_tracado_via` ASC),
   INDEX `id_uso_solo_idx` (`id_uso_solo` ASC),
   CONSTRAINT `id_fase_dia`
     FOREIGN KEY (`id_fase_dia`)
@@ -323,7 +323,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`pista` (
     ON UPDATE CASCADE,
   CONSTRAINT `id_tracado_via`
     FOREIGN KEY (`id_tracado_via`)
-    REFERENCES `mydb`.`trancado_via` (`id_trancado_via`)
+    REFERENCES `mydb`.`tracado_via` (`id_tracado_via`)
     ON DELETE CASCADE
     ON UPDATE CASCADE,
   CONSTRAINT `id_uso_solo`
@@ -389,8 +389,8 @@ ENGINE = InnoDB;
 -- Table `mydb`.`delegacia`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`delegacia` (
-  `id_delegacia` INT NOT NULL,
-  `delegacia` VARCHAR(45) NULL,
+  `id_delegacia` INT NOT NULL auto_increment,
+  `delegacia` VARCHAR(45) NULL UNIQUE,
   PRIMARY KEY (`id_delegacia`))
 ENGINE = InnoDB;
 
