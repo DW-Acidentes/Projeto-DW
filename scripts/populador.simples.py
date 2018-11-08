@@ -10,10 +10,10 @@ FORMAT_CLEAN_LIST = lambda x: x.replace(" ", "")
 FORMAT_ESCAPE_SINGLE_QUOTE = lambda x: x.replace("\\", "").replace("'", "''")
 FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x).encode('ASCII', 'ignore').decode('ASCII').upper())
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
-DEFAULT_BATCH_SIZE = 204290
+DEFAULT_BATCH_SIZE = 2000
 
 #FILE_NAME = 'acidentes2017'
-FILE_NAME = 'acidentes2017_teste'
+FILE_NAME = 'acidentes2017'
 
 
 def create_dic_table_simple(csv_columns_indexes, table_name):
@@ -48,6 +48,27 @@ def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
 
 def format_foreing_key_2(id_tabela,nome_tabela,nome_coluna_tabela1,nome_coluna_tabela2):
     return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela1 +' = {} AND ' + nome_coluna_tabela2 +' = '
+def execute_one_query(query):
+    db_cursor.execute(query)
+    return '= '+str(db_cursor.fetchone()[0])
+
+
+def get_id_pista(db_cursor, csv_row):
+    # print(csv_row)
+    colunas = ['id_fase_dia','id_sentido_via','id_condicao_metereologica','id_tipo_pista','id_tracado_via','id_uso_solo']
+    lista_ids = ["SELECT id_fase_dia FROM fase_dia WHERE fase_dia = '" + csv_row[12].strip() + "'",
+    "SELECT id_sentido_via FROM sentido_via WHERE sentido_via = '" + csv_row[13].strip() + "'",
+    "SELECT id_condicao_metereologica FROM condicao_metereologica WHERE condicao_metereologica = '" + csv_row[14].strip() + "'",
+    "SELECT id_tipo_pista FROM tipo_pista WHERE tipo_pista = '" + csv_row[15].strip() + "'",
+    "SELECT id_tracado_via FROM tracado_via WHERE tracado_via = '" + csv_row[16].strip() + "'",
+    "SELECT id_uso_solo FROM uso_solo WHERE uso_solo = '" + csv_row[17].strip() + "'"]
+    ands = ['AND']*5 + ['']
+    
+    db_cursor.execute("SELECT id_pista FROM pista WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
+
+    return str(db_cursor.fetchone()[0])
+    
+
 
 TIPO_VEICULO = create_dic_table_simple(19,'tipo_veiculo')
 MARCA = create_dic_table_simple(20,'marca')
@@ -135,17 +156,18 @@ PISTA = {
 
 ACIDENTE = {
     'csv_file_name': FILE_NAME,
-    'csv_columns_indexes': [9,10,11,15,16,17],
+    'csv_columns_indexes': [9,10,11,2,4,30,31],
     'table_name': 'acidente',
     'columns_to_insert': ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_data','id_pista','id_endereco'],
     'insert_value_format': "("+ format_foreing_key('id_causa_acidente','causa_acidente','causa_acidente') + " {})," +
                         format_foreing_key('id_tipo_acidente','tipo_acidente','tipo_acidente') +" {})," +
                         format_foreing_key('id_classificacao_acidente','classificacao_acidente','classificacao_acidente') +" {})," +
                         format_foreing_key_2('id_data','data','data_inversa','horario') +" {})," +
-                        format_foreing_key('id_tipo_pista','tipo_pista','tipo_pista') +" {})," +
-                        format_foreing_key('id_endereco','endereco','endereco') +" {}))",
-    'row_formatters': [FORMAT_CLEAN] * 6,
-    'insert_command': "INSERT"
+                        " {}," +
+                        format_foreing_key_2('id_endereco','endereco','latitude','longitude') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 8,
+    'insert_command': "INSERT",
+    'csv_special_filttering': "ACIDENTE"
 }
 
 #SELECT `id_data` FROM `data` WHERE `data_inversa` = '2017-01-01' AND `horario` = '00:40:00'
@@ -182,7 +204,7 @@ def mapInsertDB(db_cursor, table_name, insert_command, insert_values, insert_col
     #print("Valores do batch", insert_values_batch)
     # print(insert_values_batch)
     insert_sql_command = (insert_command + ' INTO ' + table_name + ' ' + insert_columns_name_statement + ' VALUES ' + ', '.join(insert_values_batch) + ' ON DUPLICATE KEY UPDATE ' + str(columns_to_insert[0]) + ' = ' +  str(columns_to_insert[0]) )
-    print("insert_sql_command === ",insert_sql_command)
+    # print("insert_sql_command === ",insert_sql_command)
     db_cursor.execute(insert_sql_command)
     # db.commit()
     # print(db_cursor.mogrify(insert_sql_command))
@@ -202,7 +224,7 @@ def build_insert_value(csv_row, row_formatters, insert_value_format):
     
     csv_row = list(map(lambda x,y: format_csv_column(x,y), csv_row, row_formatters))
     #print("Linha atual no CSV:", csv_row)   
-    
+
     #csv_row = selectIds(csv_row)
     
     return insert_value_format.format(*csv_row).replace("'NULL'", 'NULL')
@@ -220,19 +242,23 @@ def require_not_null(csv_row, csv_require_not_null_indexes):
     filtered_csv_row = list(map(lambda x: require_not_null_condition(csv_row, x), csv_require_not_null_indexes))
     return filtered_csv_row
 
-def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_preprocess_row, insert_values, csv_row):
-    if csv_preprocess_row != None:
-        try:
-            csv_row = csv_preprocess_row(csv_row)
-        except ValueError as error:
-            print(str(error))
+def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_special_filttering, insert_values, csv_row):
+    skip_normal_filter = False
+    if csv_special_filttering != None:
+        skip_normal_filter = True
+        if csv_special_filttering == 'ACIDENTE':            
+            id_pista = get_id_pista(db_cursor,csv_row)
+            csv_row = list(map(lambda x: csv_row[x], [9,10,11,2,4,0,30,31]))
+            csv_row[5] = id_pista
+        
     if csv_require_not_null_indexes != None:
         try:
             require_not_null(csv_row, csv_require_not_null_indexes)
         except:
             print("erro: csv_require_not_null_indexes")
     if csv_row != []:
-        csv_row = filter_csv_row(csv_row, csv_columns_indexes)
+        if skip_normal_filter == False:
+            csv_row = filter_csv_row(csv_row, csv_columns_indexes)
         if not allow_null_columns and '' in csv_row:
             print("erro: filter_csv_row")
         #if allow_null_columns or '' not in csv_row:
@@ -241,8 +267,8 @@ def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, a
     
     return insert_values
 
-def mapInserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_preprocess_row, insert_values, reader):
-    list(map(lambda z: inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_preprocess_row, insert_values,z), reader))
+def mapInserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_special_filttering, insert_values, reader):
+    list(map(lambda z: inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_special_filttering, insert_values,z), reader))
     return insert_values
 
 # converte csv para strings contendo um VALUE do sql
@@ -253,16 +279,16 @@ def convert_csv_to_sql_insert_values(config):
     csv_columns_indexes = config['csv_columns_indexes']
     allow_null_columns = config.get('allow_null_columns', True)
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
-    csv_preprocess_row = config.get('csv_preprocess_row', None)
+    csv_special_filttering = config.get('csv_special_filttering', None)
     #ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
-    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="utf-8")
+    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
     reader = reader[1:]
 
     insert_values = list()
-    insert_values = mapInserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_preprocess_row, insert_values, reader)
+    insert_values = mapInserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, allow_null_columns, csv_require_not_null_indexes, csv_special_filttering, insert_values, reader)
 
     return insert_values
 
@@ -298,6 +324,7 @@ def process_tables(list_tables):
     
     
 db = None
+db_cursor = None
 
 if __name__ == '__main__':
     db = my.connect(
@@ -332,7 +359,8 @@ if __name__ == '__main__':
     list_tables_inserts.append(ACIDENTE)
        
         
-    process_tables(list_tables_inserts)
+    # process_tables(list_tables_inserts)
+    process(db_cursor, ACIDENTE)
     
     
     stopTotal = timeit.default_timer()

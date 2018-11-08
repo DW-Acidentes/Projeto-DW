@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`veiculo` (
   `id_marca` INT NULL,
   `ano_fabricacao_veiculo` INT NULL,
   PRIMARY KEY (`id_veiculo`),
+  UNIQUE(`id_tipo_veiculo`,`id_marca`,`ano_fabricacao_veiculo`),
   INDEX `id_marca_idx` (`id_marca` ASC),
   INDEX `id_tipo_veiculo_idx` (`id_tipo_veiculo` ASC),
   CONSTRAINT `id_tipo_veiculo`
@@ -168,6 +169,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`endereco` (
   INDEX `id_br_idx` (`id_br` ASC),
   INDEX `id_municipio_idx` (`id_municipio` ASC),
   PRIMARY KEY (`id_endereco`),
+  UNIQUE(`latitude`,`longitude`),
   CONSTRAINT `id_br`
     FOREIGN KEY (`id_br`)
     REFERENCES `mydb`.`br` (`id_br`)
@@ -198,7 +200,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`causa_acidente` (
   `id_causa_acidente` INT unique NOT NULL auto_increment,
-  `causa_acidente` VARCHAR(45) NULL UNIQUE,
+  `causa_acidente` VARCHAR(90) NULL UNIQUE,
   PRIMARY KEY (`id_causa_acidente`))
 ENGINE = InnoDB;
 
@@ -218,7 +220,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`classificacao_acidente` (
   `id_classificacao_acidente` INT NOT NULL auto_increment,
-  `classificacao_acidente` VARCHAR(45) NULL,
+  `classificacao_acidente` VARCHAR(45) NULL UNIQUE,
   PRIMARY KEY (`id_classificacao_acidente`))
 ENGINE = InnoDB;
 
@@ -295,6 +297,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`pista` (
   `id_tracado_via` INT NULL,
   `id_uso_solo` INT NULL,
   PRIMARY KEY (`id_pista`),
+  UNIQUE(`id_fase_dia`,`id_sentido_via`, `id_condicao_metereologica`, `id_tipo_pista`, `id_tracado_via`, `id_uso_solo`),
   INDEX `id_fase_dia_idx` (`id_fase_dia` ASC),
   INDEX `id_sentido_via_idx` (`id_sentido_via` ASC),
   INDEX `id_condicao_metereologica_idx` (`id_condicao_metereologica` ASC),
@@ -346,6 +349,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`acidente` (
   `id_pista` INT NULL,
   `id_endereco` INT NULL,
   PRIMARY KEY (`id_acidente`),
+  UNIQUE(`id_causa_acidente`,`id_tipo_acidente`,`id_classificacao_acidente`,`id_data`, `id_pista`,`id_endereco`),
   INDEX `id_tipo_acidente_idx` (`id_tipo_acidente` ASC),
   INDEX `id_classificacao_acidente_idx` (`id_classificacao_acidente` ASC),
   INDEX `id_causa_acidente_idx` (`id_causa_acidente` ASC),
@@ -400,7 +404,7 @@ ENGINE = InnoDB;
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mydb`.`uop` (
   `id_uop` INT NOT NULL auto_increment,
-  `uop` VARCHAR(45) NULL,
+  `uop` VARCHAR(45) NULL UNIQUE,
   `id_municipio` INT NULL,
   `id_delegacia` INT NULL,
   PRIMARY KEY (`id_uop`),
@@ -464,4 +468,3 @@ ENGINE = InnoDB;
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-CREATE TABLE IF NOT EXISTS `mydb`.`acidente` (   `id_acidente` INT NOT NULL,   `id_causa_acidente` INT NULL,   `id_tipo_acidente` INT NULL,   `id_classificacao_acidente` INT NULL,   `id_data` INT NULL,   `id_pista` INT NULL,   `id_endereco` INT NULL,   PRIMARY KEY (`id_acidente`),   INDEX `id_tipo_acidente_idx` (`id_tipo_acidente` ASC),   INDEX `id_classificacao_acidente_idx` (`id_classificacao_acidente` ASC),   INDEX `id_causa_acidente_idx` (`id_causa_acidente` ASC),   INDEX `id_data_idx` (`id_data` ASC),   INDEX `id_pista_idx` (`id_pista` ASC),   INDEX `id_endereco_idx` (`id_endereco` ASC),   CONSTRAINT `id_causa_acidente`     FOREIGN KEY (`id_causa_acidente`)     REFERENCES `mydb`.`causa_acidente` (`id_causa_acidente`)     ON DELETE CASCADE     ON UPDATE CASCADE,   CONSTRAINT `id_tipo_acidente`     FOREIGN KEY (`id_tipo_acidente`)     REFERENCES `mydb`.`tipo_acidente` (`id_tipo_acidente`)     ON DELETE CASCADE     ON UPDATE CASCADE,   CONSTRAINT `id_classificacao_acidente`     FOREIGN KEY (`id_classificacao_acidente`)     REFERENCES `mydb`.`classificacao_acidente` (`id_classificacao_acidente`)     ON DELETE CASCADE     ON UPDATE CASCADE,   CONSTRAINT `id_data`     FOREIGN KEY (`id_data`)     REFERENCES `mydb`.`data` (`id_data`)     ON DELETE CASCADE     ON UPDATE CASCADE,   CONSTRAINT `id_pista`     FOREIGN KEY (`id_pista`)     REFERENCES `mydb`.`pista` (`id_pista`)     ON DELETE CASCADE     ON UPDATE CASCADE,   CONSTRAINT `id_endereco`     FOREIGN KEY (`id_endereco`)     REFERENCES `mydb`.`endereco` (`id_endereco`)     ON DELETE CASCADE     ON UPDATE CASCADE) ENGINE = InnoDB
