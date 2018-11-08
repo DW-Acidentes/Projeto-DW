@@ -13,7 +13,7 @@ FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 2000
 
 #FILE_NAME = 'acidentes2017'
-FILE_NAME = 'acidentes2017'
+FILE_NAME = 'acidentes2017_teste'
 
 
 def create_dic_table_simple(csv_columns_indexes, table_name):
@@ -48,13 +48,12 @@ def format_foreing_key(id_tabela,nome_tabela,nome_coluna_tabela):
 
 def format_foreing_key_2(id_tabela,nome_tabela,nome_coluna_tabela1,nome_coluna_tabela2):
     return '(SELECT '+ id_tabela + ' FROM ' + nome_tabela + ' WHERE ' + nome_coluna_tabela1 +' = {} AND ' + nome_coluna_tabela2 +' = '
+
 def execute_one_query(query):
     db_cursor.execute(query)
     return '= '+str(db_cursor.fetchone()[0])
 
-
 def get_id_pista(db_cursor, csv_row):
-    # print(csv_row)
     colunas = ['id_fase_dia','id_sentido_via','id_condicao_metereologica','id_tipo_pista','id_tracado_via','id_uso_solo']
     lista_ids = ["SELECT id_fase_dia FROM fase_dia WHERE fase_dia = '" + csv_row[12].strip() + "'",
     "SELECT id_sentido_via FROM sentido_via WHERE sentido_via = '" + csv_row[13].strip() + "'",
@@ -67,7 +66,20 @@ def get_id_pista(db_cursor, csv_row):
     db_cursor.execute("SELECT id_pista FROM pista WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
 
     return str(db_cursor.fetchone()[0])
+
+def get_id_acidente(db_cursor, csv_row, id_pista):
+    colunas = ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_data','id_pista','id_endereco']
+    lista_ids = ["SELECT id_causa_acidente FROM causa_acidente WHERE causa_acidente = '" + csv_row[12].strip() + "'",
+    "SELECT id_tipo_acidente FROM tipo_acidente WHERE tipo_acidente = '" + csv_row[13].strip() + "'",
+    "SELECT id_classificacao_acidente FROM classificacao_acidente WHERE classificacao_acidente = '" + csv_row[14].strip() + "'",
+    "SELECT id_data FROM tipo_pista WHERE tipo_pista = '" + csv_row[15].strip() + "'",
+    "SELECT id_tracado_via FROM tracado_via WHERE tracado_via = '" + csv_row[16].strip() + "'",
+    "SELECT id_uso_solo FROM uso_solo WHERE uso_solo = '" + csv_row[17].strip() + "'"]
+    ands = ['AND']*5 + ['']
     
+    db_cursor.execute("SELECT id_pista FROM acidente WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
+
+    return str(db_cursor.fetchone()[0])
 
 
 TIPO_VEICULO = create_dic_table_simple(19,'tipo_veiculo')
@@ -170,6 +182,17 @@ ACIDENTE = {
     'csv_special_filttering': "ACIDENTE"
 }
 
+MUNICIPIO = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [8,5],
+    'table_name': 'municipio',
+    'columns_to_insert': ['municipio','id_uf'],
+    'insert_value_format': "({}," +
+                        format_foreing_key('id_uf','uf','uf') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 2,
+    'insert_command': "INSERT"
+}
+
 #SELECT `id_data` FROM `data` WHERE `data_inversa` = '2017-01-01' AND `horario` = '00:40:00'
 
 class color:
@@ -250,6 +273,12 @@ def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, a
             id_pista = get_id_pista(db_cursor,csv_row)
             csv_row = list(map(lambda x: csv_row[x], [9,10,11,2,4,0,30,31]))
             csv_row[5] = id_pista
+        if csv_special_filttering == 'ACIDENTE_VEICULO':
+            id_pista = get_id_pista(db_cursor,csv_row)
+            id_acidente = get_id_acidente(db_cursor, csv_row, id_pista)
+            
+            csv_row = list(map(lambda x: csv_row[x], [9,10,11,2,4,0,30,31]))
+            csv_row[1] = id_acidente  
         
     if csv_require_not_null_indexes != None:
         try:
@@ -281,7 +310,7 @@ def convert_csv_to_sql_insert_values(config):
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_special_filttering = config.get('csv_special_filttering', None)
     #ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
-    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="utf-8")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
@@ -349,7 +378,7 @@ if __name__ == '__main__':
     list_tables_inserts = [TIPO_VEICULO,MARCA,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
                                CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,FASE_DIA,
                                SENTIDO_VIA,CONDICAO_METEREOLOGICA,TIPO_PISTA,TRACADO_VIA,USO_SOLO,DELEGACIA]
-    # Para as fases de teste
+    # Para a fase de testes
     list_tables_inserts.append(VEICULO)
     list_tables_inserts.append(DATA)
     list_tables_inserts.append(PESSOA)
@@ -359,8 +388,8 @@ if __name__ == '__main__':
     list_tables_inserts.append(ACIDENTE)
        
         
-    # process_tables(list_tables_inserts)
-    process(db_cursor, ACIDENTE)
+    process_tables(list_tables_inserts)
+    #process(db_cursor, ACIDENTE)
     
     
     stopTotal = timeit.default_timer()
