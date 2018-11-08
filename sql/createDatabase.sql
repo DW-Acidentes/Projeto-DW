@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS `mydb`.`pessoa` (
   `id_sexo` INT NULL,
   `id_estado_fisico` INT NULL,
   PRIMARY KEY (`pes_id`),
+  UNIQUE(`id_tipo_envolvido`,`idade`,`id_sexo`,`id_estado_fisico`),
   INDEX `id_sexo_idx` (`id_sexo` ASC),
   INDEX `id_estado_fisico_idx` (`id_estado_fisico` ASC),
   INDEX `id_tipo_envolvido_idx` (`id_tipo_envolvido` ASC),
@@ -387,41 +388,6 @@ CREATE TABLE IF NOT EXISTS `mydb`.`acidente` (
     ON DELETE CASCADE
     ON UPDATE CASCADE)
 ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `mydb`.`delegacia`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`delegacia` (
-  `id_delegacia` INT NOT NULL auto_increment,
-  `delegacia` VARCHAR(45) NULL UNIQUE,
-  PRIMARY KEY (`id_delegacia`))
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `mydb`.`uop`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `mydb`.`uop` (
-  `id_uop` INT NOT NULL auto_increment,
-  `uop` VARCHAR(45) NULL UNIQUE,
-  `id_municipio` INT NULL,
-  `id_delegacia` INT NULL,
-  PRIMARY KEY (`id_uop`),
-  INDEX `id_municipio_idx` (`id_municipio` ASC),
-  INDEX `id_delegacia_idx` (`id_delegacia` ASC),
-  CONSTRAINT `id_municipio_uop`
-    FOREIGN KEY (`id_municipio`)
-    REFERENCES `mydb`.`municipio` (`id_municipio`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE,
-  CONSTRAINT `id_delegacia_uop`
-    FOREIGN KEY (`id_delegacia`)
-    REFERENCES `mydb`.`delegacia` (`id_delegacia`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
-
 
 -- -----------------------------------------------------
 -- Table `mydb`.`acidente_pessoa`
