@@ -12,8 +12,9 @@ FORMAT_REMOVE_ACCENTS = lambda x: FORMAT_ESCAPE_SINGLE_QUOTE(normalize('NFKD', x
 FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 2000
 
-FILE_NAME = 'acidentes2017'
-# FILE_NAME = 'acidentes2017_teste'
+#FILE_NAME = 'acidentes2017'
+FILE_NAME = 'acidentes2017_teste_not_Null'
+#FILE_NAME = 'acidentes2017_reduzido_not_Null'
 
 
 def create_dic_table_simple(csv_columns_indexes, table_name):
@@ -66,21 +67,21 @@ def get_id_veiculo(db_cursor, csv_row):
     colunas = ['id_tipo_veiculo','id_marca','ano_fabricacao_veiculo']
     lista_ids = ["SELECT id_tipo_veiculo FROM tipo_veiculo WHERE tipo_veiculo = " + FORMAT_CLEAN(csv_row[19]),
     "SELECT id_marca FROM marca WHERE marca = " + FORMAT_CLEAN(csv_row[20]),
-    csv_row[21].strip() ]
+    int(float(csv_row[21].strip())) ]
     ands = ['AND']*2 + ['']
 
     try:
         db_cursor.execute("SELECT id_veiculo FROM veiculo WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
     except:
         print(csv_row[19:22])
-    
+         
     return str(db_cursor.fetchone()[0])
 
 def get_id_pessoa(db_cursor, csv_row):
     colunas = ['id_tipo_envolvido','idade','id_sexo','id_estado_fisico']
     [22,24,25,23]
     lista_ids = ["SELECT id_tipo_envolvido FROM tipo_envolvido WHERE tipo_envolvido = '" + csv_row[22].strip() + "'",
-    csv_row[24].strip(),
+    int(float(csv_row[24].strip())),
     "SELECT id_sexo FROM sexo WHERE sexo = '" + csv_row[25].strip() + "'",
     "SELECT id_estado_fisico FROM estado_fisico WHERE estado_fisico = '" + csv_row[23].strip() + "'"]
     ands = ['AND']*3 + ['']
@@ -370,7 +371,7 @@ def convert_csv_to_sql_insert_values(config):
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_special_filttering = config.get('csv_special_filttering', None)
     ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
-    # ifile = open('../docs/' + file_name + '.csv', 'r', encoding="utf-8")
+    #ifile = open('../../' + file_name + '.csv', 'r', encoding="ISO-8859-1")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
@@ -420,7 +421,7 @@ if __name__ == '__main__':
         host="127.0.0.1",
         user="root",
         passwd="",
-        db="mydb",  # Nome da Base de dados gerado pelo diagrama logico
+        db="acidentesdb",  # Nome da Base de dados gerado pelo diagrama logico
         use_unicode=True,
         charset="utf8"
     )
