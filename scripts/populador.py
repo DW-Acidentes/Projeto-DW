@@ -13,8 +13,8 @@ FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 2000
 
 #FILE_NAME = 'acidentes2017'
-FILE_NAME = 'acidentes2017_teste_not_Null'
-#FILE_NAME = 'acidentes2017_reduzido_not_Null'
+#FILE_NAME = 'acidentes2017_teste_not_Null'
+FILE_NAME = 'acidentes2017_reduzido_not_Null'
 
 
 def create_dic_table_simple(csv_columns_indexes, table_name):
@@ -89,7 +89,7 @@ def get_id_pessoa(db_cursor, csv_row):
     db_cursor.execute("SELECT pes_id FROM pessoa WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
     return str(db_cursor.fetchone()[0])
 
-
+'''
 def get_id_pista(db_cursor, csv_row):
     colunas = ['id_fase_dia','id_sentido_via','id_condicao_metereologica','id_tipo_pista','id_tracado_via','id_uso_solo']
     lista_ids = ["SELECT id_fase_dia FROM fase_dia WHERE fase_dia = '" + csv_row[12].strip() + "'",
@@ -102,8 +102,19 @@ def get_id_pista(db_cursor, csv_row):
 
     db_cursor.execute("SELECT id_pista FROM pista WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
 
-    return str(db_cursor.fetchone()[0])
+    return str(db_cursor.fetchone()[0])'''
 
+def get_id_pista(db_cursor, csv_row):
+    colunas = ['id_condicao_metereologica','id_tipo_pista','id_uso_solo']
+    lista_ids = ["SELECT id_condicao_metereologica FROM condicao_metereologica WHERE condicao_metereologica = '" + csv_row[14].strip() + "'",
+    "SELECT id_tipo_pista FROM tipo_pista WHERE tipo_pista = '" + csv_row[15].strip() + "'",
+    "SELECT id_uso_solo FROM uso_solo WHERE uso_solo = '" + csv_row[17].strip() + "'"]
+    ands = ['AND']*2 + ['']
+
+    db_cursor.execute("SELECT id_pista FROM pista WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
+
+    return str(db_cursor.fetchone()[0])
+'''
 def get_id_acidente(db_cursor, csv_row, id_pista):
     colunas = ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_data','id_pista','id_endereco']
     lista_ids = ["SELECT id_causa_acidente FROM causa_acidente WHERE causa_acidente = '" + csv_row[9].strip() + "'",
@@ -113,6 +124,24 @@ def get_id_acidente(db_cursor, csv_row, id_pista):
     int(id_pista),
     "SELECT id_endereco FROM endereco WHERE latitude = '" + csv_row[30].strip() + "' AND longitude = '"+csv_row[31].strip() +"'"]
     ands = ['AND']*5 + ['']
+
+    db_cursor.execute("SELECT id_acidente FROM acidente WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
+    return str(db_cursor.fetchone()[0])'''
+
+def get_id_acidente(db_cursor, csv_row, id_pista):
+    colunas = ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_pista','id_endereco','id_tipo_veiculo','data_inversa','horario']
+    lista_ids = ["SELECT id_causa_acidente FROM causa_acidente WHERE causa_acidente = '" + csv_row[9].strip() + "'",
+    "SELECT id_tipo_acidente FROM tipo_acidente WHERE tipo_acidente = '" + csv_row[10].strip() + "'",
+    "SELECT id_classificacao_acidente FROM classificacao_acidente WHERE classificacao_acidente = '" + csv_row[11].strip() + "'",
+    int(id_pista),
+    "SELECT id_endereco FROM endereco WHERE latitude = '" + csv_row[30].strip() + "' AND longitude = '"+csv_row[31].strip() +"'",
+    "SELECT id_tipo_veiculo FROM tipo_veiculo WHERE tipo_veiculo = '" + csv_row[19].strip() + "'",
+    csv_row[2].strip(),
+    csv_row[4].strip()]
+    ands = ['AND']*7 + ['']
+    
+    '''print('csv_row[2].strip()', csv_row[2].strip() )
+    print('csv_row[4].strip()', csv_row[4].strip() )'''
 
     db_cursor.execute("SELECT id_acidente FROM acidente WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
     return str(db_cursor.fetchone()[0])
@@ -185,7 +214,7 @@ ENDERECO = {
     'row_formatters': [FORMAT_CLEAN] * 5,
     'insert_command': "INSERT"
 }
-
+'''
 PISTA = {
     'csv_file_name': FILE_NAME,
     'csv_columns_indexes': [12,13,14,15,16,17],
@@ -199,11 +228,23 @@ PISTA = {
                         format_foreing_key('id_uso_solo','uso_solo','uso_solo') +" {}))",
     'row_formatters': [FORMAT_CLEAN] * 6,
     'insert_command': "INSERT"
-}
+}'''
 
+PISTA = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [14,15,17],
+    'table_name': 'pista',
+    'columns_to_insert': ['id_condicao_metereologica','id_tipo_pista','id_uso_solo'],
+    'insert_value_format': "("+ format_foreing_key('id_condicao_metereologica','condicao_metereologica','condicao_metereologica') +" {})," +
+                        format_foreing_key('id_tipo_pista','tipo_pista','tipo_pista') +" {})," +
+                        format_foreing_key('id_uso_solo','uso_solo','uso_solo') +" {}))",
+    'row_formatters': [FORMAT_CLEAN] * 3,
+    'insert_command': "INSERT"
+}
+'''
 ACIDENTE = {
     'csv_file_name': FILE_NAME,
-    'csv_columns_indexes': [9,10,11,2,4,30,31],
+    'csv_columns_indexes': [9,10,11,2,4,30,31],  # 9,10,11,2,4,0,30,31
     'table_name': 'acidente',
     'columns_to_insert': ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_data','id_pista','id_endereco'],
     'insert_value_format': "("+ format_foreing_key('id_causa_acidente','causa_acidente','causa_acidente') + " {})," +
@@ -213,6 +254,24 @@ ACIDENTE = {
                         " {}," +
                         format_foreing_key_2('id_endereco','endereco','latitude','longitude') +" {}))",
     'row_formatters': [FORMAT_CLEAN] * 8,
+    'insert_command': "INSERT",
+    'csv_special_filttering': "ACIDENTE"
+}'''
+
+ACIDENTE = {
+    'csv_file_name': FILE_NAME,
+    'csv_columns_indexes': [9,10,11,30,31,19,2,4], #  [9,10,11,0,30,31,19,2,4]
+    'table_name': 'acidente',
+    'columns_to_insert': ['id_causa_acidente','id_tipo_acidente','id_classificacao_acidente','id_pista','id_endereco','id_tipo_veiculo','data_inversa','horario'],
+    'insert_value_format': "("+ format_foreing_key('id_causa_acidente','causa_acidente','causa_acidente') + " {})," +
+                        format_foreing_key('id_tipo_acidente','tipo_acidente','tipo_acidente') +" {})," +
+                        format_foreing_key('id_classificacao_acidente','classificacao_acidente','classificacao_acidente') +" {})," +
+                        " {}," +
+                        format_foreing_key_2('id_endereco','endereco','latitude','longitude') +" {})," +
+                        format_foreing_key('id_tipo_veiculo','tipo_veiculo','tipo_veiculo') +" {})," +
+                        "{}," +
+                        "{})",
+    'row_formatters': [FORMAT_CLEAN] * 9,
     'insert_command': "INSERT",
     'csv_special_filttering': "ACIDENTE"
 }
@@ -228,7 +287,7 @@ MUNICIPIO = {
     'insert_command': "INSERT"
 }
 
-ACIDENTE_VEICULO = {
+'''ACIDENTE_VEICULO = {
     'csv_file_name': FILE_NAME,
     'csv_columns_indexes': [],
     'table_name': 'acidente_veiculo',
@@ -237,7 +296,7 @@ ACIDENTE_VEICULO = {
     'row_formatters': [FORMAT_CLEAN] * 2,
     'insert_command': "INSERT",
     'csv_special_filttering': "ACIDENTE_VEICULO"
-}
+}'''
 
 ACIDENTE_PESSOA = {
     'csv_file_name': FILE_NAME,
@@ -328,13 +387,14 @@ def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, a
         skip_normal_filter = True
         if csv_special_filttering == 'ACIDENTE':
             id_pista = get_id_pista(db_cursor,csv_row)
-            csv_row = list(map(lambda x: csv_row[x], [9,10,11,2,4,0,30,31]))
-            csv_row[5] = id_pista
-        if csv_special_filttering == 'ACIDENTE_VEICULO':
+            csv_row = list(map(lambda x: csv_row[x], [9,10,11,0,30,31,19,2,4]))
+            #csv_row[5] = id_pista
+            csv_row[3] = id_pista
+        '''if csv_special_filttering == 'ACIDENTE_VEICULO':
             id_pista = get_id_pista(db_cursor,csv_row)
             id_acidente = get_id_acidente(db_cursor, csv_row, id_pista)
             id_veiculo = get_id_veiculo(db_cursor,csv_row)
-            csv_row = [id_veiculo,id_acidente]
+            csv_row = [id_veiculo,id_acidente]'''
         if csv_special_filttering == 'ACIDENTE_PESSOA':
             id_pista = get_id_pista(db_cursor,csv_row)
             id_acidente = get_id_acidente(db_cursor, csv_row, id_pista)
@@ -370,8 +430,8 @@ def convert_csv_to_sql_insert_values(config):
     allow_null_columns = config.get('allow_null_columns', True)
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_special_filttering = config.get('csv_special_filttering', None)
-    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
-    #ifile = open('../../' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    #ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    ifile = open('../../' + file_name + '.csv', 'r', encoding="ISO-8859-1")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
@@ -436,18 +496,18 @@ if __name__ == '__main__':
     list_tables_inserts = []
 
     # Extraindo as tabela simples
-    list_tables_inserts = [TIPO_VEICULO,MARCA,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
-                               CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,FASE_DIA,
-                               SENTIDO_VIA,CONDICAO_METEREOLOGICA,TIPO_PISTA,TRACADO_VIA,USO_SOLO]
+    list_tables_inserts = [TIPO_VEICULO,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
+                               CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,
+                               CONDICAO_METEREOLOGICA,TIPO_PISTA,USO_SOLO]
     # Para a fase de testes
-    list_tables_inserts.append(VEICULO)
-    list_tables_inserts.append(DATA)
+    #list_tables_inserts.append(VEICULO)
+    #list_tables_inserts.append(DATA)
     list_tables_inserts.append(PESSOA)
     list_tables_inserts.append(MUNICIPIO)
     list_tables_inserts.append(ENDERECO)
     list_tables_inserts.append(PISTA)
     list_tables_inserts.append(ACIDENTE)
-    list_tables_inserts.append(ACIDENTE_VEICULO)
+    #list_tables_inserts.append(ACIDENTE_VEICULO)
     list_tables_inserts.append(ACIDENTE_PESSOA)
 
 
