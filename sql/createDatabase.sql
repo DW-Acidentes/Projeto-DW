@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS `acidentesdb`.`pista` (
   `id_tipo_pista` INT(11) NULL DEFAULT NULL,
   `id_uso_solo` INT(11) NULL DEFAULT NULL,
   PRIMARY KEY (`id_pista`),
+  UNIQUE(`id_condicao_metereologica`,`id_tipo_pista`,`id_uso_solo`),
   INDEX `id_condicao_metereologica_idx` (`id_condicao_metereologica` ASC),
   INDEX `id_tipo_pista_idx` (`id_tipo_pista` ASC),
   INDEX `id_uso_solo_idx` (`id_uso_solo` ASC),
