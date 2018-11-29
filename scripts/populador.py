@@ -13,7 +13,7 @@ FORMAT_DATE = lambda x: '{}-{}-{}'.format(*x.split("/")[::-1])
 DEFAULT_BATCH_SIZE = 2000
 
 #FILE_NAME = 'acidentes2017'
-#FILE_NAME = 'acidentes2017_teste_not_Null'
+#ILE_NAME = 'acidentes2017_teste_not_Null'
 FILE_NAME = 'acidentes2017_reduzido_not_Null'
 
 
@@ -57,11 +57,15 @@ def execute_one_query(query):
     try:
         query = int(query)
     except:
-        pass
+        if query[0:6] == 'SELECT':
+            db_cursor.execute(query)
+            return '= '+str(db_cursor.fetchone()[0])
+        else:
+            return "= '"+query+"'"
     if isinstance(query, int):
         return '= '+str(query)
-    db_cursor.execute(query)
-    return '= '+str(db_cursor.fetchone()[0])
+    # print(query)
+    
 
 def get_id_veiculo(db_cursor, csv_row):
     colunas = ['id_tipo_veiculo','id_marca','ano_fabricacao_veiculo']
@@ -110,9 +114,7 @@ def get_id_pista(db_cursor, csv_row):
     "SELECT id_tipo_pista FROM tipo_pista WHERE tipo_pista = '" + csv_row[15].strip() + "'",
     "SELECT id_uso_solo FROM uso_solo WHERE uso_solo = '" + csv_row[17].strip() + "'"]
     ands = ['AND']*2 + ['']
-
     db_cursor.execute("SELECT id_pista FROM pista WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
-
     return str(db_cursor.fetchone()[0])
 '''
 def get_id_acidente(db_cursor, csv_row, id_pista):
@@ -139,10 +141,6 @@ def get_id_acidente(db_cursor, csv_row, id_pista):
     csv_row[2].strip(),
     csv_row[4].strip()]
     ands = ['AND']*7 + ['']
-    
-    '''print('csv_row[2].strip()', csv_row[2].strip() )
-    print('csv_row[4].strip()', csv_row[4].strip() )'''
-
     db_cursor.execute("SELECT id_acidente FROM acidente WHERE " + ' '.join([response for ab in zip(colunas, list(map(lambda x:execute_one_query(x),lista_ids)), ands) for response in ab]))
     return str(db_cursor.fetchone()[0])
 
@@ -362,7 +360,7 @@ def format_csv_column(row, row_formatter):
 def build_insert_value(csv_row, row_formatters, insert_value_format):
 
     csv_row = list(map(lambda x,y: format_csv_column(x,y), csv_row, row_formatters))
-    #print("Linha atual no CSV:", csv_row)
+    # print("Linha atual no CSV:", csv_row)
 
     #csv_row = selectIds(csv_row)
 
@@ -388,13 +386,7 @@ def inserirValoresBD(row_formatters, insert_value_format, csv_columns_indexes, a
         if csv_special_filttering == 'ACIDENTE':
             id_pista = get_id_pista(db_cursor,csv_row)
             csv_row = list(map(lambda x: csv_row[x], [9,10,11,0,30,31,19,2,4]))
-            #csv_row[5] = id_pista
             csv_row[3] = id_pista
-        '''if csv_special_filttering == 'ACIDENTE_VEICULO':
-            id_pista = get_id_pista(db_cursor,csv_row)
-            id_acidente = get_id_acidente(db_cursor, csv_row, id_pista)
-            id_veiculo = get_id_veiculo(db_cursor,csv_row)
-            csv_row = [id_veiculo,id_acidente]'''
         if csv_special_filttering == 'ACIDENTE_PESSOA':
             id_pista = get_id_pista(db_cursor,csv_row)
             id_acidente = get_id_acidente(db_cursor, csv_row, id_pista)
@@ -431,7 +423,7 @@ def convert_csv_to_sql_insert_values(config):
     csv_require_not_null_indexes = config.get('csv_require_not_null_indexes', None)
     csv_special_filttering = config.get('csv_special_filttering', None)
     #ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
-    ifile = open('../../' + file_name + '.csv', 'r', encoding="ISO-8859-1")
+    ifile = open('../docs/' + file_name + '.csv', 'r', encoding="ISO-8859-1")
     reader = csv.reader(ifile, delimiter=';')
     reader = list(reader)
 
@@ -497,17 +489,16 @@ if __name__ == '__main__':
 
     # Extraindo as tabela simples
     list_tables_inserts = [TIPO_VEICULO,SEXO,ESTADO_FISICO,BR,UF,TIPO_ENVOLVIDO,
-                               CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,
-                               CONDICAO_METEREOLOGICA,TIPO_PISTA,USO_SOLO]
+                                CAUSA_ACIDENTE,TIPO_ACIDENTE,CLASSIFICACAO_ACIDENTE,
+                                CONDICAO_METEREOLOGICA,TIPO_PISTA,USO_SOLO]
     # Para a fase de testes
     #list_tables_inserts.append(VEICULO)
-    #list_tables_inserts.append(DATA)
     list_tables_inserts.append(PESSOA)
     list_tables_inserts.append(MUNICIPIO)
     list_tables_inserts.append(ENDERECO)
     list_tables_inserts.append(PISTA)
     list_tables_inserts.append(ACIDENTE)
-    #list_tables_inserts.append(ACIDENTE_VEICULO)
+    # list_tables_inserts.append(ACIDENTE_VEICULO)
     list_tables_inserts.append(ACIDENTE_PESSOA)
 
 
